@@ -1,76 +1,24 @@
-import client from '../../../../sanity/client';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
+// app/region/[slug]/page.js
+import { getDestinosPorRegion } from '@/lib/queries';
+import DestinoCard from '@/components/DestinoCard';
 
-const query = `*[_type == "destino" && slug.current == $slug][0]{
-  titulo,
-  descripcion,
-  "imagenUrl": imagen.asset->url,
-  precio,
-  region,
-  provincia,
-  salidaMes,
-  slug
-}`;
-
-export async function generateStaticParams() {
-  const slugsQuery = `*[_type == "destino" && defined(slug.current)][].slug.current`;
-  const slugs = await client.fetch(slugsQuery);
-
-  return slugs.map((slug) => ({
-    slug,
-  }));
-}
-
-export default async function DestinoPage({ params }) {
+export default async function RegionPage({ params }) {
   const { slug } = params;
-  const destino = await client.fetch(query, { slug });
-
-  if (!destino) {
-    return notFound();
-  }
+  const region = slug.charAt(0).toUpperCase() + slug.slice(1); // capitaliza para matchear con el schema
+  const destinos = await getDestinosPorRegion(region);
 
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-        <img
-          src={destino.imagenUrl}
-          alt={destino.titulo}
-          className="w-full h-64 object-cover"
-        />
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">{destino.titulo}</h1>
-          <p className="text-gray-600 mb-4">{destino.descripcion}</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 text-sm text-gray-700">
-            <p><span className="font-semibold">Precio:</span> ${destino.precio}</p>
-            <p><span className="font-semibold">Región:</span> {destino.region}</p>
-            <p><span className="font-semibold">Provincia:</span> {destino.provincia}</p>
-            <p>
-              <span className="font-semibold">Salida:</span>{' '}
-              {destino.salidaMes?.join(', ') || 'No especificada'}
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Link
-              href="/"
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md text-center"
-            >
-              ← Volver
-            </Link>
-
-            <a
-              href={`https://wa.me/549XXXXXXXXXX?text=Hola! Quiero consultar por el destino: ${encodeURIComponent(destino.titulo)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-center"
-            >
-              Consultar por WhatsApp
-            </a>
-          </div>
+    <main className="px-6 py-10">
+      <h1 className="text-3xl font-bold mb-6 text-center">Destinos en {region}</h1>
+      {destinos.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-5xl mx-auto">
+          {destinos.map((destino) => (
+            <DestinoCard key={destino._id} destino={destino} />
+          ))}
         </div>
-      </div>
+      ) : (
+        <p className="text-center text-gray-600">No se encontraron destinos en esta región.</p>
+      )}
     </main>
   );
 }

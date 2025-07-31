@@ -9,10 +9,28 @@ export async function getDestinos() {
     descripcion,
     "imagenUrl": imagen.asset->url,
     slug,
-    titulo
+    titulo,
+    region
 
   }`;
 
   const destinos = await client.fetch(query);
+  return destinos;
+}
+export async function getDestinosPorRegion(region) {
+  const query = `*[_type == "destino" && region == $region]{
+    _id,
+    title,
+    slug,
+    description,
+    region,
+    image {
+      asset -> {
+        url
+      }
+    }
+  }`;
+
+  const destinos = await client.fetch(query, { region });
   return destinos;
 }
